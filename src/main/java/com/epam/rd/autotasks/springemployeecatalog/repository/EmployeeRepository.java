@@ -1,22 +1,20 @@
 package com.epam.rd.autotasks.springemployeecatalog.repository;
 
-import com.epam.rd.autotasks.springemployeecatalog.domain.Employee;
+
+import com.epam.rd.autotasks.springemployeecatalog.entity.EmployeeEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
-public interface EmployeeRepository extends CrudRepository<Employee, Integer> {
+public interface EmployeeRepository extends JpaRepository<EmployeeEntity, Long> {
     @Query(value = "SELECT * FROM EMPLOYEE WHERE MANAGER = :id", nativeQuery = true)
-    List<Employee> getAllSubordinates(Integer id);
+    List<EmployeeEntity> getAllSubordinates(Long id);
 
     @Query(value = "SELECT * FROM EMPLOYEE WHERE DEPARTMENT = :department", nativeQuery = true)
-    List<Employee> getEmployeeByDepartment_Id(Integer department);
-
-    @Query(value = "SELECT * FROM EMPLOYEE JOIN DEPARTMENT WHERE EMPLOYEE.ID = DEPARTMENT.ID AND DEPARTMENT.NAME = :departmentName", nativeQuery = true)
-    List<Employee> getEmployeeByDepartmentName(String departmentName);
+    List<EmployeeEntity> getEmployeeByDepartmentId(Long department);
 }
 
 
