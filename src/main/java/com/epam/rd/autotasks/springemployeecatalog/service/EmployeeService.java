@@ -147,12 +147,11 @@ public class EmployeeService {
                     limitedEmployees = employees;
                 } else if (size >= employees.size()) {
                     limitedEmployees = new ArrayList<>();
-                } else if ((size * (page + 1)) <= employees.size()) {
+                } else if (employees.size() > (size * page)) {
                     for (int i = page * size; i < size * (page + 1); i++) {
+                        if (i >= employees.size()) break;
                         limitedEmployees.add(employees.get(i));
                     }
-                } else if ((size * (page + 1)) > employees.size()) {
-                    limitedEmployees = new ArrayList<>();
                 }
             }
         } else limitedEmployees = employees;
@@ -201,24 +200,26 @@ public class EmployeeService {
     }
 
     public List<Employee> getEmployeesByDepartment(String department, Integer page, Integer size, String sorting) throws NotFoundException {
-        List<EmployeeEntity> employeeEntities;
+        List<EmployeeEntity> employeeEntities = null;
 
         if (Character.isDigit(department.charAt(0))) {
             if (!employeeRepository.getEmployeeByDepartmentId(Long.parseLong(department)).isEmpty()) {
                 employeeEntities = employeeRepository.getEmployeeByDepartmentId(Long.parseLong(department));
-            } else throw new NotFoundException("Employees were not found");
+            }
         } else {
             DepartmentEntity departmentEntity = departmentRepository.findByDepartmentName(department);
 
             if (departmentEntity != null) {
                 employeeEntities = employeeRepository.getEmployeeByDepartmentId(departmentEntity.getId());
-            } else throw new NotFoundException("Employees were not found");
+            }
         }
 
         List<Employee> employees = new ArrayList<>();
 
-        for (EmployeeEntity employee : employeeEntities) {
-            employees.add(mapEmployeeEntityToEmployeeNoChain(employee));
+        if (employeeEntities != null) {
+            for (EmployeeEntity employee : employeeEntities) {
+                employees.add(mapEmployeeEntityToEmployeeNoChain(employee));
+            }
         }
 
         return paging(employees, page, size, sorting);

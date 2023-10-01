@@ -31,13 +31,13 @@ public class EmployeeController {
         } else return employeeService.getEmployeeById(employee_id);
     }
 
-    @GetMapping("employee/by_manager/{managerId}")
+    @GetMapping("employees/by_manager/{managerId}")
     public List<Employee> getSubordinates(@PathVariable(value = "managerId", required = false) Long managerId, @RequestParam(required = false) Integer page,
                                           @RequestParam(required = false) Integer size, @RequestParam(required = false) String sort) throws NotFoundException {
         return employeeService.getSubordinates(managerId, page, size, sort);
     }
 
-    @GetMapping("employee/by_department/{department}")
+    @GetMapping("employees/by_department/{department}")
     public List<Employee> getEmployeesByDepartment(@PathVariable(value = "department", required = false) String department,
                                                    @RequestParam(required = false) Integer page,
                                                    @RequestParam(required = false) Integer size,
