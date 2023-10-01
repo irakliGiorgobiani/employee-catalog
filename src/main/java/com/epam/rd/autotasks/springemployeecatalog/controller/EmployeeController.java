@@ -18,33 +18,30 @@ public class EmployeeController {
         this.employeeService = employeeService;
     }
 
-    @GetMapping(path = {"employees", "employees/{employee_id}"})
-    public List<Employee> getEmployees(@PathVariable(name = "employee_id", required = false) Long employee_id,
-                                          @RequestParam(required = false) Integer page,
-                                          @RequestParam(required = false) Integer size,
-                                          @RequestParam(required = false) String sorting,
-                                          @RequestParam(required = false) boolean fullChain) throws NotFoundException {
+    @GetMapping("employees")
+    public List<Employee> getEmployees(@RequestParam(required = false) Integer page, @RequestParam(required = false) Integer size,
+                                          @RequestParam(required = false) String sort) throws NotFoundException {
+        return employeeService.getAllEmployees(page, size, sort);
+    }
 
-        if (employee_id == null) {
-            return employeeService.getAllEmployees(page, size, sorting);
-        } else if (!fullChain) {
-            return employeeService.getEmployeeById(employee_id);
-        } else {
-            return employeeService.getFullChain(employee_id, page, size, sorting);
-        }
+    @GetMapping("employees/{employee_id}")
+    public Employee getEmployee(@PathVariable("employee_id") Long employee_id, @RequestParam(required = false) boolean full_chain) throws NotFoundException {
+        if (full_chain) {
+            return employeeService.getFullChain(employee_id);
+        } else return employeeService.getEmployeeById(employee_id);
     }
 
     @GetMapping("employee/by_manager/{managerId}")
     public List<Employee> getSubordinates(@PathVariable(value = "managerId", required = false) Long managerId, @RequestParam(required = false) Integer page,
-                                          @RequestParam(required = false) Integer size, @RequestParam(required = false) String sorting) throws NotFoundException {
-        return employeeService.getSubordinates(managerId, page, size, sorting);
+                                          @RequestParam(required = false) Integer size, @RequestParam(required = false) String sort) throws NotFoundException {
+        return employeeService.getSubordinates(managerId, page, size, sort);
     }
 
     @GetMapping("employee/by_department/{department}")
     public List<Employee> getEmployeesByDepartment(@PathVariable(value = "department", required = false) String department,
                                                    @RequestParam(required = false) Integer page,
                                                    @RequestParam(required = false) Integer size,
-                                                   @RequestParam(required = false) String sorting) throws NotFoundException {
-        return employeeService.getEmployeesByDepartment(department, page, size, sorting);
+                                                   @RequestParam(required = false) String sort) throws NotFoundException {
+        return employeeService.getEmployeesByDepartment(department, page, size, sort);
     }
 }

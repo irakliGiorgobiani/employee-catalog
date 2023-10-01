@@ -26,6 +26,43 @@ public class EmployeeService {
         this.departmentRepository = departmentRepository;
     }
 
+    private Employee mapEmployeeEntityToEmployeeNoChain(EmployeeEntity employeeEntity) throws NotFoundException {
+        if (employeeEntity.getDepartment() == null) {
+            return new Employee(employeeEntity.getId(), new FullName(employeeEntity.getFirstName(), employeeEntity.getLastName(), employeeEntity.getMiddleName()),
+                    Position.valueOf(employeeEntity.getPosition()), employeeEntity.getHire(), employeeEntity.getSalary(), null, null);
+        } else if (employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getDepartment() == null) {
+            return new Employee(employeeEntity.getId(), new FullName(employeeEntity.getFirstName(), employeeEntity.getLastName(), employeeEntity.getMiddleName()),
+                    Position.valueOf(employeeEntity.getPosition()), employeeEntity.getHire(), employeeEntity.getSalary(),
+                    new Employee(employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getId(),
+                            new FullName(employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getFirstName(),
+                                    employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getLastName(),
+                                    employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getMiddleName()),
+                            Position.valueOf(employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getPosition()),
+                            employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getHire(),
+                            employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getSalary(), null, null),
+                    new Department(departmentRepository.findById(employeeEntity.getDepartment()).orElseThrow(() -> new NotFoundException("Department was not found")).getId(),
+                            departmentRepository.findById(employeeEntity.getDepartment()).orElseThrow(() -> new NotFoundException("Department was not found")).getName(),
+                            departmentRepository.findById(employeeEntity.getDepartment()).orElseThrow(() -> new NotFoundException("Department was not found")).getLocation()));
+        } else return new Employee(employeeEntity.getId(), new FullName(employeeEntity.getFirstName(), employeeEntity.getLastName(), employeeEntity.getMiddleName()),
+                Position.valueOf(employeeEntity.getPosition()), employeeEntity.getHire(), employeeEntity.getSalary(),
+                new Employee(employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getId(),
+                        new FullName(employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getFirstName(),
+                                employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getLastName(),
+                                employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getMiddleName()),
+                        Position.valueOf(employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getPosition()),
+                        employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getHire(),
+                        employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found")).getSalary(), null,
+                        new Department(departmentRepository.findById(employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found"))
+                                .getDepartment()).orElseThrow(() -> new NotFoundException("Department was not found")).getId(),
+                                departmentRepository.findById(employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found"))
+                                        .getDepartment()).orElseThrow(() -> new NotFoundException("Department was not found")).getName(),
+                                departmentRepository.findById(employeeRepository.findById(employeeEntity.getManager()).orElseThrow(() -> new NotFoundException("Employee was not found"))
+                                        .getDepartment()).orElseThrow(() -> new NotFoundException("Department was not found")).getLocation())),
+                new Department(departmentRepository.findById(employeeEntity.getDepartment()).orElseThrow(() -> new NotFoundException("Department was not found")).getId(),
+                        departmentRepository.findById(employeeEntity.getDepartment()).orElseThrow(() -> new NotFoundException("Department was not found")).getName(),
+                        departmentRepository.findById(employeeEntity.getDepartment()).orElseThrow(() -> new NotFoundException("Department was not found")).getLocation()));
+    }
+
     private Employee mapEmployeeEntityToEmployee(EmployeeEntity employeeEntity) {
         if (employeeEntity.getManager() == null) {
             return new Employee(employeeEntity.getId(), new FullName(employeeEntity.getFirstName(), employeeEntity.getLastName(), employeeEntity.getMiddleName()),
@@ -74,67 +111,77 @@ public class EmployeeService {
     private List<Employee> paging(List<Employee> employees, Integer page, Integer size, String sorting) {
         List<Employee> limitedEmployees = new ArrayList<>();
 
-        if (page != null && size != null) {
-            for (int i = page * size; i < size * (page + 1); i++) {
-                limitedEmployees.add(employees.get(i));
-            }
-        } else limitedEmployees = employees;
-
         if (sorting != null) {
             switch (sorting) {
                 case "lastName":
-                    limitedEmployees.sort(Comparator.comparing(employee -> employee.getFullName().getLastName()));
+                    employees.sort(Comparator.comparing(employee -> employee.getFullName().getLastName()));
                     break;
                 case "hired":
-                    limitedEmployees.sort(Comparator.comparing(Employee::getHired));
+                    employees.sort(Comparator.comparing(Employee::getHired));
                     break;
                 case "position":
-                    limitedEmployees.sort(Comparator.comparing(Employee::getPosition));
+                    employees.sort(Comparator.comparing(employee -> employee.getPosition().toString()));
                     break;
                 case "salary":
-                    limitedEmployees.sort(Comparator.comparing(Employee::getSalary));
+                    employees.sort(Comparator.comparing(Employee::getSalary));
                     break;
             }
         }
 
+        for (Employee employee:
+             employees) {
+            System.out.println(employee);
+        }
+
+        if (size != null) {
+            if (page == null) {
+                if (size >= employees.size()) {
+                    limitedEmployees = employees;
+                } else {
+                    for (int i = 0; i < size + 1; i++) {
+                        limitedEmployees.add(employees.get(i));
+                    }
+                }
+            } else {
+                if (size >= employees.size() && page == 0) {
+                    limitedEmployees = employees;
+                } else if (size >= employees.size()) {
+                    limitedEmployees = new ArrayList<>();
+                } else if ((size * (page + 1)) <= employees.size()) {
+                    for (int i = page * size; i < size * (page + 1); i++) {
+                        limitedEmployees.add(employees.get(i));
+                    }
+                } else if ((size * (page + 1)) > employees.size()) {
+                    limitedEmployees = new ArrayList<>();
+                }
+            }
+        } else limitedEmployees = employees;
+
         return limitedEmployees;
     }
 
-    public List<Employee> getAllEmployees(Integer page, Integer size, String sorting) {
+    public List<Employee> getAllEmployees(Integer page, Integer size, String sorting) throws NotFoundException {
         List<EmployeeEntity> allEmployeeEntities = employeeRepository.findAll();
 
         List<Employee> allEmployees = new ArrayList<>();
 
         for (EmployeeEntity entity : allEmployeeEntities) {
-            allEmployees.add(mapEmployeeEntityToEmployee(entity));
+            allEmployees.add(mapEmployeeEntityToEmployeeNoChain(entity));
         }
 
         return paging(allEmployees, page, size, sorting);
     }
 
-    public List<Employee> getEmployeeById(Long id) throws NotFoundException {
+    public Employee getEmployeeById(Long id) throws NotFoundException {
         EmployeeEntity employeeEntity = employeeRepository.findById(id).orElseThrow(() -> new NotFoundException("Employee with that id was not found"));
 
-        List<Employee> employees = new ArrayList<>();
-        employees.add(mapEmployeeEntityToEmployee(employeeEntity));
-
-        return employees;
+        return mapEmployeeEntityToEmployeeNoChain(employeeEntity);
     }
 
-    public List<Employee> getFullChain(Long id, Integer page, Integer size, String sorting) throws NotFoundException {
+    public Employee getFullChain(Long id) throws NotFoundException {
         EmployeeEntity employeeEntity = employeeRepository.findById(id).orElseThrow(() -> new NotFoundException("Employee with that id was not found"));
 
-        Employee employee = mapEmployeeEntityToEmployee(employeeEntity);
-
-        List<Employee> employeeChain = new ArrayList<>();
-
-        while (employee != null) {
-            employeeChain.add(employee);
-
-            employee = employee.getManager();
-        }
-
-        return paging(employeeChain, page, size, sorting);
+        return mapEmployeeEntityToEmployee(employeeEntity);
     }
 
     public List<Employee> getSubordinates(Long managerId, Integer page, Integer size, String sorting) throws NotFoundException {
@@ -147,7 +194,7 @@ public class EmployeeService {
         List<Employee> employees = new ArrayList<>();
 
         for (EmployeeEntity employee : employeeEntities) {
-            employees.add(mapEmployeeEntityToEmployee(employee));
+            employees.add(mapEmployeeEntityToEmployeeNoChain(employee));
         }
 
         return paging(employees, page, size, sorting);
@@ -171,7 +218,7 @@ public class EmployeeService {
         List<Employee> employees = new ArrayList<>();
 
         for (EmployeeEntity employee : employeeEntities) {
-            employees.add(mapEmployeeEntityToEmployee(employee));
+            employees.add(mapEmployeeEntityToEmployeeNoChain(employee));
         }
 
         return paging(employees, page, size, sorting);
